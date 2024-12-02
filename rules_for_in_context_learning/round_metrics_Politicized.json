@@ -1,0 +1,167 @@
+{
+    "iter": 10,
+    "cur_iter_proposal": {
+        "policy_domain_id": "8",
+        "policy_domain": "Politicized",
+        "analysis_report": {
+            "correct_review_patterns": [
+                {
+                    "pattern_summary": "Correct rejection of ads featuring government symbols or implying government endorsement.",
+                    "related_policy_rule_id": "8.2",
+                    "related_policy_rule": "Ads must avoid using images that include government symbols or buildings which could imply a government endorsement or affiliation unless it is explicitly and directly related to the service being advertised.",
+                    "highlight_nuances_or_patterns": "Ads with government buildings, flags, or symbols like the presidential seal were correctly identified as non-compliant.",
+                    "refinement_strategy": "Keep this pattern when proposing new rule because it is correct."
+                },
+                {
+                    "pattern_summary": "Correct rejection of ads featuring active politicians or stylized representations.",
+                    "related_policy_rule_id": "8.1",
+                    "related_policy_rule": "Ads must not feature images of active politicians or political candidates, including any stylized or artistic representations that could reasonably be interpreted as such.",
+                    "highlight_nuances_or_patterns": "Ads with images or artistic representations of known politicians were correctly rejected.",
+                    "refinement_strategy": "Keep this pattern when proposing new rule because it is correct."
+                },
+                {
+                    "pattern_summary": "Correct rejection of ads suggesting political bias or affiliations.",
+                    "related_policy_rule_id": "8.3",
+                    "related_policy_rule": "Ads should not contain language or imagery that suggests political bias, supports a political agenda, criticizes a political figure or policy, or could be interpreted as politically charged.",
+                    "highlight_nuances_or_patterns": "Ads containing explicit mentions of political figures or agendas, such as 'Trump' or 'Congress', were correctly rejected.",
+                    "refinement_strategy": "Keep this pattern when proposing new rule because it is correct."
+                }
+            ],
+            "incorrect_review_patterns": [
+                {
+                    "pattern_summary": "Incorrect approval of ads with stylized images of politicians.",
+                    "related_policy_rule_id": "8.1",
+                    "related_policy_rule": "Ads must not feature images of active politicians or political candidates, including any stylized or artistic representations that could reasonably be interpreted as such.",
+                    "highlight_nuances_or_patterns": "The ad featuring a stylized image of a politician was incorrectly approved, suggesting a need for clearer guidelines on stylized representations.",
+                    "refinement_strategy": "Modify existing rules to include clearer definitions and examples of 'stylized or artistic representations' of politicians."
+                }
+            ]
+        },
+        "policy_rules": [
+            {
+                "id": "8.1",
+                "rule": "Ads must not feature images of active politicians or political candidates, including any stylized or artistic representations that could reasonably be interpreted as such."
+            },
+            {
+                "id": "8.2",
+                "rule": "Ads must avoid using images that include government symbols or buildings which could imply a government endorsement or affiliation unless it is explicitly and directly related to the service being advertised."
+            },
+            {
+                "id": "8.3",
+                "rule": "Ads should not contain language or imagery that suggests political bias, supports a political agenda, criticizes a political figure or policy, or could be interpreted as politically charged."
+            },
+            {
+                "id": "8.4",
+                "rule": "Thumbnail images in ads should be neutral and not depict political events, rallies, or symbols that could be interpreted as politically charged, including subliminal or indirect references."
+            }
+        ]
+    },
+    "eval_report_valid_prev_best_iter": {
+        "approved": {
+            "precision": 1.0,
+            "recall": 0.8333333333333334,
+            "f1-score": 0.9090909090909091,
+            "support": 6.0
+        },
+        "rejected": {
+            "precision": 0.6666666666666666,
+            "recall": 1.0,
+            "f1-score": 0.8,
+            "support": 2.0
+        },
+        "accuracy": 0.875,
+        "macro avg": {
+            "precision": 0.8333333333333333,
+            "recall": 0.9166666666666667,
+            "f1-score": 0.8545454545454545,
+            "support": 8.0
+        },
+        "weighted avg": {
+            "precision": 0.9166666666666666,
+            "recall": 0.875,
+            "f1-score": 0.8818181818181818,
+            "support": 8.0
+        }
+    },
+    "eval_report_valid_after": {
+        "approved": {
+            "precision": 1.0,
+            "recall": 0.8333333333333334,
+            "f1-score": 0.9090909090909091,
+            "support": 6.0
+        },
+        "rejected": {
+            "precision": 0.6666666666666666,
+            "recall": 1.0,
+            "f1-score": 0.8,
+            "support": 2.0
+        },
+        "accuracy": 0.875,
+        "macro avg": {
+            "precision": 0.8333333333333333,
+            "recall": 0.9166666666666667,
+            "f1-score": 0.8545454545454545,
+            "support": 8.0
+        },
+        "weighted avg": {
+            "precision": 0.9166666666666666,
+            "recall": 0.875,
+            "f1-score": 0.8818181818181818,
+            "support": 8.0
+        }
+    },
+    "eval_report_train_prev_best_iter": {
+        "approved": {
+            "precision": 0.8571428571428571,
+            "recall": 1.0,
+            "f1-score": 0.9230769230769231,
+            "support": 12.0
+        },
+        "rejected": {
+            "precision": 1.0,
+            "recall": 0.8823529411764706,
+            "f1-score": 0.9375,
+            "support": 17.0
+        },
+        "accuracy": 0.9310344827586207,
+        "macro avg": {
+            "precision": 0.9285714285714286,
+            "recall": 0.9411764705882353,
+            "f1-score": 0.9302884615384616,
+            "support": 29.0
+        },
+        "weighted avg": {
+            "precision": 0.9408866995073891,
+            "recall": 0.9310344827586207,
+            "f1-score": 0.9315318302387268,
+            "support": 29.0
+        }
+    },
+    "eval_report_train_after": {
+        "approved": {
+            "precision": 0.8571428571428571,
+            "recall": 1.0,
+            "f1-score": 0.9230769230769231,
+            "support": 12.0
+        },
+        "rejected": {
+            "precision": 1.0,
+            "recall": 0.8823529411764706,
+            "f1-score": 0.9375,
+            "support": 17.0
+        },
+        "accuracy": 0.9310344827586207,
+        "macro avg": {
+            "precision": 0.9285714285714286,
+            "recall": 0.9411764705882353,
+            "f1-score": 0.9302884615384616,
+            "support": 29.0
+        },
+        "weighted avg": {
+            "precision": 0.9408866995073891,
+            "recall": 0.9310344827586207,
+            "f1-score": 0.9315318302387268,
+            "support": 29.0
+        }
+    }
+}

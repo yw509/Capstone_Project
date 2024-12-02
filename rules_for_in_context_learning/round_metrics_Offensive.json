@@ -1,0 +1,182 @@
+{
+    "iter": 10,
+    "cur_iter_proposal": {
+        "policy_domain_id": "2",
+        "policy_domain": "Offensive",
+        "analysis_report": {
+            "correct_review_patterns": [
+                {
+                    "pattern_summary": "Correct rejection of ads using images of individuals in medical distress without educational or public health context.",
+                    "related_policy_rule_id": "2.6",
+                    "related_policy_rule": "Images of individuals in medical distress used for donation requests must provide clear, educational, or public health context beyond mere solicitation, including specific details about the medical condition and the educational purpose of the ad.",
+                    "highlight_nuances_or_patterns": "Ads using emotionally charged images of medical distress to solicit donations without providing detailed educational content or context about the condition.",
+                    "refinement_strategy": "Keep this pattern when proposing new rule because it is correct."
+                },
+                {
+                    "pattern_summary": "Correct rejection of ads with potentially misleading or deceptive financial claims or imagery.",
+                    "related_policy_rule_id": "2.5",
+                    "related_policy_rule": "Financial imagery, such as large sums of money or checks, should not alone be grounds for rejection unless it is explicitly misleading or deceptive. Contextual evaluation is essential to determine the appropriateness of the financial imagery.",
+                    "highlight_nuances_or_patterns": "Ads featuring financial claims or imagery suggesting unrealistic returns or benefits without adequate context or risk disclosure.",
+                    "refinement_strategy": "Keep this pattern when proposing new rule because it is correct."
+                },
+                {
+                    "pattern_summary": "Correct rejection of ads containing personal identifiable information without consent.",
+                    "related_policy_rule_id": "2.3",
+                    "related_policy_rule": "Ads must not include personal identifiable information in images or text without explicit consent and appropriate context, ensuring privacy and respect for individuals' data.",
+                    "highlight_nuances_or_patterns": "Ads displaying personal details such as names and addresses on checks, violating privacy norms.",
+                    "refinement_strategy": "Keep this pattern when proposing new rule because it is correct."
+                }
+            ],
+            "incorrect_review_patterns": [
+                {
+                    "pattern_summary": "Incorrect rejection of ads with financial imagery that is contextually appropriate.",
+                    "related_policy_rule_id": "2.5",
+                    "related_policy_rule": "Financial imagery, such as large sums of money or checks, should not alone be grounds for rejection unless it is explicitly misleading or deceptive. Contextual evaluation is essential to determine the appropriateness of the financial imagery.",
+                    "highlight_nuances_or_patterns": "Ads featuring financial imagery like currency bills in a context that is neither misleading nor deceptive but was still rejected.",
+                    "refinement_strategy": "Modify existing rules to better define what constitutes misleading or deceptive financial imagery."
+                },
+                {
+                    "pattern_summary": "Incorrect approval of ads with potentially offensive imagery or claims not adequately justified by educational or public health context.",
+                    "related_policy_rule_id": "2.1",
+                    "related_policy_rule": "Ads must not use images that depict severe medical conditions, deformities, or graphic content that could be considered repulsive or shocking, unless the context clearly justifies the content, such as explicit educational material on medical aid or public health campaigns.",
+                    "highlight_nuances_or_patterns": "Ads containing images of medical conditions or distress that were approved despite lacking sufficient educational or public health context.",
+                    "refinement_strategy": "Add new rules to clarify the requirements for educational or public health context in ads featuring medical or graphic imagery."
+                }
+            ]
+        },
+        "policy_rules": [
+            {
+                "id": "2.1",
+                "rule": "Ads must not use images that depict severe medical conditions, deformities, or graphic content that could be considered repulsive or shocking, unless the context clearly justifies the content, such as explicit educational material on medical aid or public health campaigns."
+            },
+            {
+                "id": "2.2",
+                "rule": "Ads must avoid using culturally insensitive imagery or language that could offend or alienate specific groups or individuals, including misuse of national flags, religious symbols, or culturally significant attire, unless there is a relevant and respectful context provided."
+            },
+            {
+                "id": "2.3",
+                "rule": "Ads must not include personal identifiable information in images or text without explicit consent and appropriate context, ensuring privacy and respect for individuals' data."
+            },
+            {
+                "id": "2.4",
+                "rule": "Ads must ensure that all imagery and content are appropriate for a general audience, avoiding elements that could be interpreted as offensive or in poor taste, except in contexts where such imagery serves a clear and non-offensive purpose. Provide specific examples to clarify what constitutes 'clear and non-offensive purpose'."
+            },
+            {
+                "id": "2.5",
+                "rule": "Financial imagery, such as large sums of money or checks, should not alone be grounds for rejection unless it is explicitly misleading or deceptive. Contextual evaluation is essential to determine the appropriateness of the financial imagery."
+            },
+            {
+                "id": "2.6",
+                "rule": "Images of individuals in medical distress used for donation requests must provide clear, educational, or public health context beyond mere solicitation, including specific details about the medical condition and the educational purpose of the ad."
+            }
+        ]
+    },
+    "eval_report_valid_prev_best_iter": {
+        "approved": {
+            "precision": 0.8,
+            "recall": 0.6666666666666666,
+            "f1-score": 0.7272727272727273,
+            "support": 6.0
+        },
+        "rejected": {
+            "precision": 0.8461538461538461,
+            "recall": 0.9166666666666666,
+            "f1-score": 0.88,
+            "support": 12.0
+        },
+        "accuracy": 0.8333333333333334,
+        "macro avg": {
+            "precision": 0.823076923076923,
+            "recall": 0.7916666666666666,
+            "f1-score": 0.8036363636363637,
+            "support": 18.0
+        },
+        "weighted avg": {
+            "precision": 0.8307692307692308,
+            "recall": 0.8333333333333334,
+            "f1-score": 0.8290909090909091,
+            "support": 18.0
+        }
+    },
+    "eval_report_valid_after": {
+        "approved": {
+            "precision": 0.8,
+            "recall": 0.6666666666666666,
+            "f1-score": 0.7272727272727273,
+            "support": 6.0
+        },
+        "rejected": {
+            "precision": 0.8461538461538461,
+            "recall": 0.9166666666666666,
+            "f1-score": 0.88,
+            "support": 12.0
+        },
+        "accuracy": 0.8333333333333334,
+        "macro avg": {
+            "precision": 0.823076923076923,
+            "recall": 0.7916666666666666,
+            "f1-score": 0.8036363636363637,
+            "support": 18.0
+        },
+        "weighted avg": {
+            "precision": 0.8307692307692308,
+            "recall": 0.8333333333333334,
+            "f1-score": 0.8290909090909091,
+            "support": 18.0
+        }
+    },
+    "eval_report_train_prev_best_iter": {
+        "approved": {
+            "precision": 0.8095238095238095,
+            "recall": 0.8947368421052632,
+            "f1-score": 0.85,
+            "support": 19.0
+        },
+        "rejected": {
+            "precision": 0.8888888888888888,
+            "recall": 0.8,
+            "f1-score": 0.8421052631578947,
+            "support": 20.0
+        },
+        "accuracy": 0.8461538461538461,
+        "macro avg": {
+            "precision": 0.8492063492063492,
+            "recall": 0.8473684210526315,
+            "f1-score": 0.8460526315789474,
+            "support": 39.0
+        },
+        "weighted avg": {
+            "precision": 0.8502238502238502,
+            "recall": 0.8461538461538461,
+            "f1-score": 0.8459514170040486,
+            "support": 39.0
+        }
+    },
+    "eval_report_train_after": {
+        "approved": {
+            "precision": 0.85,
+            "recall": 0.85,
+            "f1-score": 0.85,
+            "support": 20.0
+        },
+        "rejected": {
+            "precision": 0.85,
+            "recall": 0.85,
+            "f1-score": 0.85,
+            "support": 20.0
+        },
+        "accuracy": 0.85,
+        "macro avg": {
+            "precision": 0.85,
+            "recall": 0.85,
+            "f1-score": 0.85,
+            "support": 40.0
+        },
+        "weighted avg": {
+            "precision": 0.85,
+            "recall": 0.85,
+            "f1-score": 0.85,
+            "support": 40.0
+        }
+    }
+}

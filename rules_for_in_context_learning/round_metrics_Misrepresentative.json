@@ -1,0 +1,175 @@
+{
+    "iter": 10,
+    "cur_iter_proposal": {
+        "policy_domain_id": "6",
+        "policy_domain": "Misrepresentative",
+        "analysis_report": {
+            "correct_review_patterns": [
+                {
+                    "pattern_summary": "Ads with explicit guarantees about specific financial outcomes without substantiation were correctly rejected.",
+                    "related_policy_rule_id": "6.5",
+                    "related_policy_rule": "Ads must not contain explicit guarantees or promises about specific outcomes unless they are substantiated with credible evidence and clearly disclosed; general statements about potential benefits are permissible if they do not imply guaranteed results.",
+                    "highlight_nuances_or_patterns": "Ads promising specific earnings like 'Earn Monthly $35,000 with Autopilot' or 'Seniors Discover Bank Offering Unprecedented 12% Interest Rates' were flagged correctly as they lacked credible substantiation for these claims.",
+                    "refinement_strategy": "Keep this pattern when proposing new rules because it is correct."
+                },
+                {
+                    "pattern_summary": "Ads with thumbnails not directly related to the advertised content were correctly rejected.",
+                    "related_policy_rule_id": "6.2",
+                    "related_policy_rule": "Thumbnail images used in ads must directly relate to the advertised content, allowing for thematic relevance without misleading the viewer.",
+                    "highlight_nuances_or_patterns": "Thumbnails showing unrelated imagery like luxury cars or large amounts of money, which suggest wealth or financial gain unrelated to the actual service, were correctly identified as misleading.",
+                    "refinement_strategy": "Keep this pattern when proposing new rules because it is correct."
+                }
+            ],
+            "incorrect_review_patterns": [
+                {
+                    "pattern_summary": "Ads with thumbnails that are thematically relevant but were rejected due to perceived misalignment with the title or description.",
+                    "related_policy_rule_id": "6.2",
+                    "related_policy_rule": "Thumbnail images used in ads must directly relate to the advertised content, allowing for thematic relevance without misleading the viewer.",
+                    "highlight_nuances_or_patterns": "Thumbnails that actually fit the theme of the ad, such as healthcare professionals for health insurance ads, were incorrectly rejected due to a strict interpretation of thematic relevance.",
+                    "refinement_strategy": "Modify rule 6.2 to allow some flexibility in interpreting thematic relevance, especially when the image broadly aligns with the service or product sector."
+                },
+                {
+                    "pattern_summary": "Ads that posed general questions or discussed potential benefits without making explicit guarantees were incorrectly rejected.",
+                    "related_policy_rule_id": "6.6",
+                    "related_policy_rule": "Ads may pose hypothetical questions or discuss future possibilities without being considered misleading, provided they do not guarantee specific outcomes or imply such outcomes without substantiation.",
+                    "highlight_nuances_or_patterns": "Ads asking questions like 'Who normally has the cheapest car insurance?' were rejected, though they did not guarantee specific outcomes.",
+                    "refinement_strategy": "Clarify rule 6.6 to better define the boundary between permissible hypothetical questions and misleading guarantees."
+                }
+            ]
+        },
+        "policy_rules": [
+            {
+                "id": "6.1",
+                "rule": "Ads must provide a truthful representation of the product, service, or content offered, avoiding any claims or statements that could mislead the viewer."
+            },
+            {
+                "id": "6.2",
+                "rule": "Thumbnail images used in ads must directly relate to the advertised content, allowing for thematic relevance without misleading the viewer. Flexibility in interpretation is allowed if the image broadly aligns with the service or product sector."
+            },
+            {
+                "id": "6.3",
+                "rule": "Ad titles and descriptions must avoid misleading language and must accurately reflect the linked content or landing page, distinguishing between guaranteed outcomes and general advice."
+            },
+            {
+                "id": "6.4",
+                "rule": "Dynamic keyword insertion must be used accurately and must not mislead by suggesting personalized or specific benefits without substantiation."
+            },
+            {
+                "id": "6.5",
+                "rule": "Ads must not contain explicit guarantees or promises about specific outcomes unless they are substantiated with credible evidence and clearly disclosed; general statements about potential benefits are permissible if they do not imply guaranteed results."
+            },
+            {
+                "id": "6.6",
+                "rule": "Ads may pose hypothetical questions or discuss future possibilities without being considered misleading, provided they do not guarantee specific outcomes or imply such outcomes without substantiation. This includes providing clear context for questions to avoid misleading interpretations."
+            }
+        ]
+    },
+    "eval_report_valid_prev_best_iter": {
+        "approved": {
+            "precision": 0.6666666666666666,
+            "recall": 0.18181818181818182,
+            "f1-score": 0.2857142857142857,
+            "support": 11.0
+        },
+        "rejected": {
+            "precision": 0.47058823529411764,
+            "recall": 0.8888888888888888,
+            "f1-score": 0.6153846153846154,
+            "support": 9.0
+        },
+        "accuracy": 0.5,
+        "macro avg": {
+            "precision": 0.5686274509803921,
+            "recall": 0.5353535353535354,
+            "f1-score": 0.45054945054945056,
+            "support": 20.0
+        },
+        "weighted avg": {
+            "precision": 0.5784313725490196,
+            "recall": 0.5,
+            "f1-score": 0.434065934065934,
+            "support": 20.0
+        }
+    },
+    "eval_report_valid_after": {
+        "approved": {
+            "precision": 0.6666666666666666,
+            "recall": 0.18181818181818182,
+            "f1-score": 0.2857142857142857,
+            "support": 11.0
+        },
+        "rejected": {
+            "precision": 0.47058823529411764,
+            "recall": 0.8888888888888888,
+            "f1-score": 0.6153846153846154,
+            "support": 9.0
+        },
+        "accuracy": 0.5,
+        "macro avg": {
+            "precision": 0.5686274509803921,
+            "recall": 0.5353535353535354,
+            "f1-score": 0.45054945054945056,
+            "support": 20.0
+        },
+        "weighted avg": {
+            "precision": 0.5784313725490196,
+            "recall": 0.5,
+            "f1-score": 0.434065934065934,
+            "support": 20.0
+        }
+    },
+    "eval_report_train_prev_best_iter": {
+        "approved": {
+            "precision": 0.5714285714285714,
+            "recall": 0.2,
+            "f1-score": 0.2962962962962963,
+            "support": 20.0
+        },
+        "rejected": {
+            "precision": 0.5151515151515151,
+            "recall": 0.85,
+            "f1-score": 0.6415094339622641,
+            "support": 20.0
+        },
+        "accuracy": 0.525,
+        "macro avg": {
+            "precision": 0.5432900432900433,
+            "recall": 0.525,
+            "f1-score": 0.4689028651292802,
+            "support": 40.0
+        },
+        "weighted avg": {
+            "precision": 0.5432900432900432,
+            "recall": 0.525,
+            "f1-score": 0.46890286512928014,
+            "support": 40.0
+        }
+    },
+    "eval_report_train_after": {
+        "approved": {
+            "precision": 0.5714285714285714,
+            "recall": 0.21052631578947367,
+            "f1-score": 0.3076923076923077,
+            "support": 19.0
+        },
+        "rejected": {
+            "precision": 0.53125,
+            "recall": 0.85,
+            "f1-score": 0.6538461538461539,
+            "support": 20.0
+        },
+        "accuracy": 0.5384615384615384,
+        "macro avg": {
+            "precision": 0.5513392857142857,
+            "recall": 0.5302631578947368,
+            "f1-score": 0.4807692307692308,
+            "support": 39.0
+        },
+        "weighted avg": {
+            "precision": 0.5508241758241758,
+            "recall": 0.5384615384615384,
+            "f1-score": 0.48520710059171596,
+            "support": 39.0
+        }
+    }
+}

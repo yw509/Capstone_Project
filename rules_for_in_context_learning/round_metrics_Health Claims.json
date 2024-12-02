@@ -1,0 +1,164 @@
+{
+    "iter": 10,
+    "cur_iter_proposal": {
+        "policy_domain_id": "5",
+        "policy_domain": "Health Claims",
+        "analysis_report": {
+            "correct_review_patterns": [
+                {
+                    "pattern_summary": "Ads making unsubstantiated health-related claims or using absolute language regarding health outcomes were correctly rejected.",
+                    "related_policy_rule_id": "5.1, 5.2",
+                    "related_policy_rule": "Ads must not make health-related claims that a product or service can treat, cure, or prevent any disease or condition unless verified by reliable, scientific evidence. Ads must avoid using absolute language such as 'guaranteed' or 'ensured' in relation to health outcomes without proper substantiation.",
+                    "highlight_nuances_or_patterns": "Ads were rejected for claiming effectiveness of medications or treatments without evidence, or for implying urgency in health matters without substantiation.",
+                    "refinement_strategy": "Keep this pattern when proposing new rule because it is correct."
+                },
+                {
+                    "pattern_summary": "Ads implying financial benefits related to health without clear disclaimers were correctly rejected.",
+                    "related_policy_rule_id": "5.3",
+                    "related_policy_rule": "Health-related financial claims must include clear disclaimers and should not imply that financial benefits or compensation are assured.",
+                    "highlight_nuances_or_patterns": "Ads were rejected for suggesting financial relief from health insurance or treatments without adequate disclaimers.",
+                    "refinement_strategy": "Keep this pattern when proposing new rule because it is correct."
+                }
+            ],
+            "incorrect_review_patterns": [
+                {
+                    "pattern_summary": "Ads that were rejected despite providing general information about health insurance with clear terms.",
+                    "related_policy_rule_id": "5.3",
+                    "related_policy_rule": "Health-related financial claims must include clear disclaimers and should not imply that financial benefits or compensation are assured.",
+                    "highlight_nuances_or_patterns": "Some ads were incorrectly rejected even though they offered clear information about health insurance costs and coverage, without implying assured benefits.",
+                    "refinement_strategy": "Modify existing rules to clarify that clear, factual information about health insurance costs and coverage does not constitute a violation if no assured outcome is implied."
+                }
+            ]
+        },
+        "policy_rules": [
+            {
+                "id": "5.1",
+                "rule": "Ads must not make health-related claims that a product or service can treat, cure, or prevent any disease or condition unless verified by reliable, scientific evidence."
+            },
+            {
+                "id": "5.2",
+                "rule": "Ads must avoid using absolute language such as 'guaranteed' or 'ensured' in relation to health outcomes without proper substantiation."
+            },
+            {
+                "id": "5.3",
+                "rule": "Health-related financial claims must include clear disclaimers and should not imply that financial benefits or compensation are assured. This rule does not apply to straightforward, factual information about health insurance costs and coverage, provided no assured outcomes are implied."
+            },
+            {
+                "id": "5.4",
+                "rule": "Documentation or scientific support must be readily available for review if an ad makes specific health claims."
+            },
+            {
+                "id": "5.5",
+                "rule": "Ads must not target individuals based on their health conditions in a way that implies knowledge of their private health information."
+            }
+        ]
+    },
+    "eval_report_valid_prev_best_iter": {
+        "approved": {
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1-score": 0.6666666666666666,
+            "support": 8.0
+        },
+        "rejected": {
+            "precision": 0.6363636363636364,
+            "recall": 1.0,
+            "f1-score": 0.7777777777777778,
+            "support": 7.0
+        },
+        "accuracy": 0.7333333333333333,
+        "macro avg": {
+            "precision": 0.8181818181818181,
+            "recall": 0.75,
+            "f1-score": 0.7222222222222222,
+            "support": 15.0
+        },
+        "weighted avg": {
+            "precision": 0.8303030303030302,
+            "recall": 0.7333333333333333,
+            "f1-score": 0.7185185185185186,
+            "support": 15.0
+        }
+    },
+    "eval_report_valid_after": {
+        "approved": {
+            "precision": 0.8571428571428571,
+            "recall": 0.6666666666666666,
+            "f1-score": 0.75,
+            "support": 9.0
+        },
+        "rejected": {
+            "precision": 0.6666666666666666,
+            "recall": 0.8571428571428571,
+            "f1-score": 0.75,
+            "support": 7.0
+        },
+        "accuracy": 0.75,
+        "macro avg": {
+            "precision": 0.7619047619047619,
+            "recall": 0.7619047619047619,
+            "f1-score": 0.75,
+            "support": 16.0
+        },
+        "weighted avg": {
+            "precision": 0.7738095238095237,
+            "recall": 0.75,
+            "f1-score": 0.75,
+            "support": 16.0
+        }
+    },
+    "eval_report_train_prev_best_iter": {
+        "approved": {
+            "precision": 0.9,
+            "recall": 0.5294117647058824,
+            "f1-score": 0.6666666666666666,
+            "support": 17.0
+        },
+        "rejected": {
+            "precision": 0.68,
+            "recall": 0.9444444444444444,
+            "f1-score": 0.7906976744186046,
+            "support": 18.0
+        },
+        "accuracy": 0.7428571428571429,
+        "macro avg": {
+            "precision": 0.79,
+            "recall": 0.7369281045751634,
+            "f1-score": 0.7286821705426356,
+            "support": 35.0
+        },
+        "weighted avg": {
+            "precision": 0.7868571428571428,
+            "recall": 0.7428571428571429,
+            "f1-score": 0.7304540420819491,
+            "support": 35.0
+        }
+    },
+    "eval_report_train_after": {
+        "approved": {
+            "precision": 0.6666666666666666,
+            "recall": 0.5882352941176471,
+            "f1-score": 0.625,
+            "support": 17.0
+        },
+        "rejected": {
+            "precision": 0.65,
+            "recall": 0.7222222222222222,
+            "f1-score": 0.6842105263157895,
+            "support": 18.0
+        },
+        "accuracy": 0.6571428571428571,
+        "macro avg": {
+            "precision": 0.6583333333333333,
+            "recall": 0.6552287581699346,
+            "f1-score": 0.6546052631578947,
+            "support": 35.0
+        },
+        "weighted avg": {
+            "precision": 0.6580952380952381,
+            "recall": 0.6571428571428571,
+            "f1-score": 0.655451127819549,
+            "support": 35.0
+        }
+    }
+}
