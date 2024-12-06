@@ -1,3 +1,5 @@
+# BM25: text-only -> no rules
+
 import os
 import json
 from pathlib import Path
@@ -30,12 +32,10 @@ else:
     client = OpenAI(
         organization=open('organization_uclanlp.txt').readline().strip(),
         api_key=open('api_key_uclanlp.txt').readline().strip(),
-        # base_url=openai_api_base,
     )
     rules_generation_model = 'gpt-4-turbo-2024-04-09'
     image_check_model = "gpt-4o-2024-08-06"
     evaluation_model = "gpt-4o-2024-08-06"
-    # raise NotImplementedError
 
 
 #template for in_context_learning prompt
@@ -85,25 +85,6 @@ Predicted Rejection Comment: {(Provide the reason if rejected; enter (null) if a
 **Do not provide any string other than the approval label and predicted rejection comment.**
 """)
 
-def get_unique_top_n(bm25_model, eval_content, data, similar_item, remove_duplicate_titles):
-    top_items = bm25_model.get_top_n(eval_content, data.to_dict('records'), n=len(data))
-    
-    if remove_duplicate_titles:
-        title_counts = {}
-        for ad in top_items:
-            title_counts[ad['title']] = title_counts.get(ad['title'], 0) + 1
-        
-        unique_top_items = []
-        for ad in top_items:
-            if title_counts[ad['title']] == 1:  # Only add ads with unique titles
-                unique_top_items.append(ad)
-                if len(unique_top_items) == similar_item:  # Stop when we have the required number
-                    break
-        
-        return unique_top_items
-    else:
-        return top_items[:similar_item]
-
 def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_data_chunk, evaluation_model, similar_item, output_dir, remove_duplicate_titles, exp_name = None):
     y_true = []
     y_pred = []
@@ -125,17 +106,9 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
     # For each evaluation data point, retrieve 10 most similar from approved and rejected train_data
     for _, eval_row in tqdm(eval_data_chunk.iterrows(), desc='Evaluating' if not exp_name else exp_name):
         eval_content = (str(eval_row['title']) + ' ' + str(eval_row['description'])).split()  # Tokenize eval data content
-        
-        # # Get top n similar approved and rejected items
-        # top_approved = bm25_approved.get_top_n(eval_content, approved_data.to_dict('records'), n=similar_item)
-        # top_rejected = bm25_rejected.get_top_n(eval_content, rejected_data.to_dict('records'), n=similar_item)
-        # selected_train_items = top_approved + top_rejected
 
         top_approved = get_unique_top_n(bm25_approved, eval_content, approved_data, similar_item, remove_duplicate_titles)
         top_rejected = get_unique_top_n(bm25_rejected, eval_content, rejected_data, similar_item, remove_duplicate_titles)
-
-        #print("The current number of examples is: (1) approved: ", len(top_approved), "; (2) rejected: ", len(top_rejected))
-        # Combine approved and rejected items
         selected_train_items = top_approved + top_rejected  
 
         # render the prompt
@@ -203,8 +176,7 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
         predicted_rejection_comment = None
         for line in response_content.splitlines():
             if "Approval Label:" in line:
-                predicted_approval_label = line.split("Approval Label:")[1].strip().lower()  # Convert to lowercase and strip any surrounding whitespace
-                # Clean any additional characters or punctuation
+                predicted_approval_label = line.split("Approval Label:")[1].strip().lower()
                 predicted_approval_label = predicted_approval_label.replace(" ", "").replace(".", "").replace(",", "")
             elif "Predicted Rejection Comment:" in line:
                 predicted_rejection_comment = line.split("Predicted Rejection Comment:")[1].strip()
@@ -213,7 +185,7 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
             print("Error: Approval label is not in the expected format.")
         # Now compare with the actual label
         else:
-            y_true.append(eval_row['approval_label'].lower())  # modified: Store true label for F1 calculation
+            y_true.append(eval_row['approval_label'].lower()) 
             y_pred.append(predicted_approval_label)
 
             # Append each example ad as a separate row in the detailed results
@@ -249,7 +221,6 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
 
     return f1
 
-
 def main(model):
 
     base_dir = "/Users/wangyuchen/Desktop/research_with_Taboola/abby-taboola/meta_prompting/single_iter_meta_prompt/in_context_learning_nosametitles_norules_results"
@@ -262,8 +233,6 @@ def main(model):
     data = json.load(open(os.path.join(HOME_DIR, 'data/1004_meta_prompting_promotional_content_personal_finance_investing_only_dataset_splitted.json')))
     data_df = {}
     for k, v in data.items():
-        # print(v['train'])
-        # print(type(v['train']))
         data_df[k] = {
             'train_df': pd.read_json(json.dumps(v['train'])),
             'eval_df':  pd.read_json(json.dumps(v['eval']))
@@ -298,7 +267,6 @@ def main(model):
     csv_path = os.path.abspath("rank_bm25_nosametitles_macro_f1_scores_higher_n.csv")
     print(f"Results saved to {csv_path}")
     
-
 if __name__ == '__main__':
     evaluation_model = "gpt-4o-2024-08-06"
     main(evaluation_model)

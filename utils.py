@@ -5,13 +5,9 @@ from sklearn.metrics import confusion_matrix, classification_report, f1_score
 import openai
 from openai import OpenAI, AzureOpenAI
 import backoff
+import os
+import json
 
-
-# backend infrastructure
-#domain = 'Taboola'
-#assert domain in ['Taboola', 'UCLANLP']
-#print('Setting up the openai backend with domain', domain)
-#if domain == 'Taboola':
 taboola_client = AzureOpenAI(
     azure_endpoint = "https://qa-la-002.openai.azure.com/",
     api_key=open('api_key_taboola.txt').readline().strip(),
@@ -21,19 +17,10 @@ rules_generation_model = "gpt-4-turbo-2024-04-09-research"  # 'dev-openai-gpt4-v
 image_check_model = "gpt-4o-2024-08-06-research"  # 'dev-azure-gpt4o'     # Model for image availability checking
 evaluation_model = "gpt-4o-2024-08-06-research"  # Model for evaluation
 
-#else:
-#assert domain == 'UCLANLP'
 uclanlp_client = OpenAI(
-    # organization=open('organization_uclanlp.txt').readline().strip(),
-    # api_key=open('api_key_uclanlp.txt').readline().strip(),
     api_key=open('api_key_taboola_openai.txt').readline().strip(),
-    # base_url=openai_api_base,
 )
 rules_generation_model = 'gpt-4-turbo-2024-04-09'
-#image_check_model = "gpt-4o-2024-08-06"
-#evaluation_model = "gpt-4o-2024-08-06"
-# raise NotImplementedError
-
 
 @backoff.on_exception(backoff.constant, (openai.RateLimitError, openai.APIError), interval=2)
 def openai_chat_completion_with_backoff(backend, **kwargs):
@@ -42,7 +29,6 @@ def openai_chat_completion_with_backoff(backend, **kwargs):
     else:
         response = taboola_client.chat.completions.create(**kwargs)
     return response
-
 
 evaluation_prompt = """
 **Context:**
@@ -81,7 +67,6 @@ Use the following structure:
 }
 """
 
-
 def get_data_chunk(data, chunk_size, random_state):
     """
     Get a chunk of data from the dataset.
@@ -99,7 +84,6 @@ def get_data_chunk(data, chunk_size, random_state):
     else:
         data_chunk = data.sample(n=chunk_size, random_state=random_state)
     return data_chunk
-
 
 # updated version with public Azure API
 def get_data_chunk_with_valid_thumbnail_url(data_chunk, img_detail_level):
@@ -148,7 +132,6 @@ def get_data_chunk_with_valid_thumbnail_url(data_chunk, img_detail_level):
             continue
 
         # Check the response and determine if it's valid
-        # if 'inappropriate' not in response['choices'][0]['message']['content'].lower():
         if 'inappropriate' not in response.choices[0].message.content.lower():
             valid_responses.append(True)
         else:
@@ -157,7 +140,6 @@ def get_data_chunk_with_valid_thumbnail_url(data_chunk, img_detail_level):
     # Filter the data chunk based on valid responses
     data_chunk = data_chunk[valid_responses]
     return data_chunk, valid_responses
-
 
 def convert_dataset_to_user_prompt(label_to_data_chunk_dict, components_override=None, is_relevant_component_only=False, included_comment_col=None, img_detail_level='low'):
     if components_override is not None and is_relevant_component_only:
@@ -203,7 +185,6 @@ def convert_dataset_to_user_prompt(label_to_data_chunk_dict, components_override
         "content": content
     }
 
-
 def build_llm_gateway_request(system_prompt, user_prompt, model, max_tokens=1000, temperature=0.5, seed=None):
     """
     Build the request payload for the OpenAI API and call the completion endpoint with backoff.
@@ -226,10 +207,6 @@ def build_llm_gateway_request(system_prompt, user_prompt, model, max_tokens=1000
             "content": system_prompt  # System-level prompt
         },
         user_prompt
-        # {
-        #     "role": "user",
-        #     "content": user_prompt  # User prompt, formatted as expected
-        # }
     ]
 
     # Prepare the arguments for the OpenAI chat completion
@@ -242,10 +219,8 @@ def build_llm_gateway_request(system_prompt, user_prompt, model, max_tokens=1000
 
     return kwargs
 
-
 def call_llm_gateway(backend, kwargs):
     return openai_chat_completion_with_backoff(backend=backend, **kwargs)
-
 
 def call_llm_gateway_concurrently(llm_gateway_req_list, max_concurrency=3):
     call_llm_gateway_partial = lambda x: call_llm_gateway('taboola', x)
@@ -253,7 +228,6 @@ def call_llm_gateway_concurrently(llm_gateway_req_list, max_concurrency=3):
     with ThreadPoolExecutor(max_workers=max_concurrency) as executor:
         responses = list(tqdm(executor.map(call_llm_gateway_partial, llm_gateway_req_list), total=len(llm_gateway_req_list)))
     return responses
-
 
 def calculate_eval_metric(df_eval, is_print=False):
     y_pred = df_eval['compliance_status'].map({'APPROVED': 'approved', 'REJECTED': 'rejected'})
@@ -265,3 +239,62 @@ def calculate_eval_metric(df_eval, is_print=False):
         print(report)
         print(cm_df)
     return report, cm_df
+
+def get_unique_top_n(bm25_model, eval_content, data, similar_item, remove_duplicate_titles):
+    top_items = bm25_model.get_top_n(eval_content, data.to_dict('records'), n=len(data))
+    
+    if remove_duplicate_titles:
+        title_counts = {}
+        for ad in top_items:
+            title_counts[ad['title']] = title_counts.get(ad['title'], 0) + 1
+        
+        unique_top_items = []
+        for ad in top_items:
+            if title_counts[ad['title']] == 1: 
+                unique_top_items.append(ad)
+                if len(unique_top_items) == similar_item:  
+                    break
+        
+        return unique_top_items
+    else:
+        return top_items[:similar_item]
+
+def get_unique_top_random(data, similar_item, remove_duplicate_titles):
+
+    if remove_duplicate_titles:
+        title_counts = data['title'].value_counts()
+        unique_data = data[data['title'].map(title_counts) == 1] 
+        if len(unique_data) >= similar_item:
+            return unique_data.sample(n=similar_item)
+        else:
+            return unique_data
+    else:
+        if len(data) >= similar_item:
+            return data.sample(n=similar_item)
+        else:
+            return data
+
+def get_all_policy_rules():
+    # Directory containing JSON files
+    directory = "/Users/wangyuchen/Desktop/research_with_Taboola/abby-taboola/meta_prompting/single_iter_meta_prompt/rules_for_in_context_learning"
+
+    # Dictionary to hold policy domain names and their corresponding policy rules
+    policy_rules_dict = {}
+
+    # Iterate over each JSON file in the directory
+    for filename in os.listdir(directory):
+        if filename.endswith(".json"):
+            file_path = os.path.join(directory, filename)
+            
+            # Open and load the JSON data
+            with open(file_path, 'r') as file:
+                data = json.load(file)
+                
+                # Extract the policy domain name and policy rules
+                policy_domain = data["cur_iter_proposal"]["policy_domain"]
+                policy_rules = data["cur_iter_proposal"]["policy_rules"]
+                
+                # Add the policy rules to the dictionary under the policy domain name
+                policy_rules_dict[policy_domain] = policy_rules
+
+    return policy_rules_dict

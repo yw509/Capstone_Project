@@ -1,3 +1,5 @@
+# BM25: text-only -> with rules
+
 import os
 import json
 from pathlib import Path
@@ -30,21 +32,11 @@ else:
     client = OpenAI(
         organization=open('organization_uclanlp.txt').readline().strip(),
         api_key=open('api_key_uclanlp.txt').readline().strip(),
-        # base_url=openai_api_base,
     )
     rules_generation_model = 'gpt-4-turbo-2024-04-09'
     image_check_model = "gpt-4o-2024-08-06"
     evaluation_model = "gpt-4o-2024-08-06"
-    # raise NotImplementedError
 
-
-#template for in_context_learning prompt
-#1. context
-#2. task
-#3. instruction
-    #a. data analysis: the related cases from training dataset
-    #b. inference: infer from the related cases
-#4.output: approved/rejected
 in_context_learning_prompt = Template("""
 **Context:**
 You are a very senior Ad Reviewer with twenty years experience. Your task is to thoroughly review all relevant information pertaining to an advertisement and determine whether it meets the criteria for approval or should be rejected.
@@ -90,25 +82,6 @@ Violated rule id(s): {(Provide the violated rule id(s) in a list format ["1.1", 
 **Do not provide any string other than the approval label, predicted rejection comment, and violated rule id(s).**
 """)
 
-def get_unique_top_n(bm25_model, eval_content, data, similar_item, remove_duplicate_titles):
-    top_items = bm25_model.get_top_n(eval_content, data.to_dict('records'), n=len(data))
-    
-    if remove_duplicate_titles:
-        title_counts = {}
-        for ad in top_items:
-            title_counts[ad['title']] = title_counts.get(ad['title'], 0) + 1
-        
-        unique_top_items = []
-        for ad in top_items:
-            if title_counts[ad['title']] == 1:  # Only add ads with unique titles
-                unique_top_items.append(ad)
-                if len(unique_top_items) == similar_item:  # Stop when we have the required number
-                    break
-        
-        return unique_top_items
-    else:
-        return top_items[:similar_item]
-
 def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_data_chunk, evaluation_model, similar_item, policy_rules, output_dir, exp_name = None, remove_duplicate_titles = True):
     y_true = []
     y_pred = []
@@ -130,16 +103,9 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
     # For each evaluation data point, retrieve 10 most similar from approved and rejected train_data
     for _, eval_row in tqdm(eval_data_chunk.iterrows(), desc='Evaluating' if not exp_name else exp_name):
         eval_content = (str(eval_row['title']) + ' ' + str(eval_row['description'])).split()  # Tokenize eval data content
-        
-        # # Get top n similar approved and rejected items
-        # top_approved = bm25_approved.get_top_n(eval_content, approved_data.to_dict('records'), n=similar_item)
-        # top_rejected = bm25_rejected.get_top_n(eval_content, rejected_data.to_dict('records'), n=similar_item)
-        # selected_train_items = top_approved + top_rejected
 
         top_approved = get_unique_top_n(bm25_approved, eval_content, approved_data, similar_item, remove_duplicate_titles)
         top_rejected = get_unique_top_n(bm25_rejected, eval_content, rejected_data, similar_item, remove_duplicate_titles)
-
-        # Combine approved and rejected items
         selected_train_items = top_approved + top_rejected  
 
         # render the prompt
@@ -186,7 +152,7 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
         messages = [
             {
                 "role": "system",
-                "content": rendered_prompt  # System-level prompt
+                "content": rendered_prompt  
             }
         ]
 
@@ -203,40 +169,23 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
         # Sample response from OpenAI API
         response_content = response.choices[0].message.content.strip('`json\n')
 
-        # Extract Approval Label, Rejection Comment, and Violated Rule IDs from the response content
         predicted_approval_label = None
         predicted_rejection_comment = None
         violated_rule_ids = None
 
-        # Assuming the response content format: "Approval Label: {label}\nPredicted Rejection Comment: {comment}"
         for line in response_content.splitlines():
             if "Approval Label:" in line:
-                # Clean any additional characters or punctuation
                 predicted_approval_label = (line.split("Approval Label:")[1].strip().lower()).replace(" ", "").replace(".", "").replace(",", "")
             elif "Predicted Rejection Comment:" in line:
                 predicted_rejection_comment = line.split("Predicted Rejection Comment:")[1].strip()
             elif "Violated rule id(s):" in line:
                 violated_rule_ids = line.split("Violated rule id(s):")[1].strip()
                 
-
         if predicted_approval_label not in ["rejected", "approved"]:
             print("Error: Approval label is not in the expected format.")
-        # Now compare with the actual label
         else:
-            y_true.append(eval_row['approval_label'].lower())  # modified: Store true label for F1 calculation
+            y_true.append(eval_row['approval_label'].lower())  
             y_pred.append(predicted_approval_label)
-
-            # # Append each data point's results to detailed_results
-            # detailed_results.append({
-            #     "policy_domain": policy_domain,
-            #     "target_image_url": eval_row['thumbnail_url'],
-            #     "target_title": eval_row['title'],
-            #     "target_description": eval_row['description'],
-            #     "predicted_approval_label": predicted_approval_label,
-            #     "predicted_rejection_comment": predicted_rejection_comment,
-            #     "violated_rule_ids": violated_rule_ids,
-            #     "true_label": eval_row['approval_label'].lower()
-            # })
 
             # Append each example ad as a separate row in the detailed results
             for ad in selected_train_items:
@@ -264,47 +213,12 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
     
     f1 = f1_score(y_true, y_pred, average='macro')
 
-    # # Convert detailed results to DataFrame and save
-    # detailed_results_df = pd.DataFrame(detailed_results)
-    # output_file = f"{policy_domain.replace(' ', '_')}_similar_item_{similar_item}_evaluation_results.csv"
-    # detailed_results_df.to_csv(output_file, index=False)
-    # print(f"Saved detailed results to {output_file}")
-
-    # Convert detailed results to DataFrame and save in specified directory
     detailed_results_df = pd.DataFrame(detailed_results)
     output_file = os.path.join(output_dir, f"{policy_domain.replace(' ', '_')}_similar_item_{similar_item}_evaluation_results.csv")
     detailed_results_df.to_csv(output_file, index=False)
     print(f"Saved detailed results to {output_file}")
 
     return f1
-
-def get_all_policy_rules():
-    # Directory containing JSON files
-    directory = "/Users/wangyuchen/Desktop/research_with_Taboola/abby-taboola/meta_prompting/single_iter_meta_prompt/rules_for_in_context_learning"
-
-    # Dictionary to hold policy domain names and their corresponding policy rules
-    policy_rules_dict = {}
-
-    # Iterate over each JSON file in the directory
-    for filename in os.listdir(directory):
-        if filename.endswith(".json"):
-            file_path = os.path.join(directory, filename)
-            
-            # Open and load the JSON data
-            with open(file_path, 'r') as file:
-                data = json.load(file)
-                
-                # Extract the policy domain name and policy rules
-                policy_domain = data["cur_iter_proposal"]["policy_domain"]
-                policy_rules = data["cur_iter_proposal"]["policy_rules"]
-                
-                # Add the policy rules to the dictionary under the policy domain name
-                policy_rules_dict[policy_domain] = policy_rules
-
-    # Now policy_rules_dict contains each policy domain with its associated rules
-    #print(policy_rules_dict)
-    return policy_rules_dict
-
 
 def main(model):
 
@@ -321,8 +235,6 @@ def main(model):
     data = json.load(open(os.path.join(HOME_DIR, 'data/1004_meta_prompting_promotional_content_personal_finance_investing_only_dataset_splitted.json')))
     data_df = {}
     for k, v in data.items():
-        # print(v['train'])
-        # print(type(v['train']))
         data_df[k] = {
             'train_df': pd.read_json(json.dumps(v['train'])),
             'eval_df':  pd.read_json(json.dumps(v['eval']))
@@ -357,7 +269,6 @@ def main(model):
     csv_path = os.path.abspath("rank_bm25_withrules_nosametitles_macro_f1_scores.csv")
     print(f"Results saved to {csv_path}")
     
-
 if __name__ == '__main__':
     evaluation_model = "gpt-4o-2024-08-06"
     main(evaluation_model)

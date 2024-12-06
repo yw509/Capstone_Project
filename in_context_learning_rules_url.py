@@ -1,4 +1,4 @@
-# bm25: text + thumbnail URLs -> no rules
+# bm25: text + thumbnail URLs -> with rules
 
 import os
 import json
@@ -43,30 +43,35 @@ You are a very senior Ad Reviewer with twenty years experience. Your task is to 
 
 **Task:**
 For each assignment, you will be given a target advertisement that includes the title, description, and thumbnail image.
-You will also receive 20 example ad components, each including a thumbnail image, title, description, approval_label, policy_domain, predicted_rejection_reason, predicted_sub_rejection, and predicted_rejection_comment. These ads have titles and descriptions similar to the one you are reviewing. Use these 20 ads as references to guide your decision on whether to approve or reject the ad you're working on. Note that if an ad's approval label is 'approved,' the predicted_rejection_reason, predicted_sub_rejection, and predicted_rejection_comment fields will be (null).
+You will also receive 20 example ad components, each including a thumbnail image, title, description, approval_label, policy_domain, predicted_rejection_reason, predicted_sub_rejection, and predicted_rejection_comment. These ads have titles and descriptions similar to the one you are reviewing. Use these 20 ads as references to guide your decision on whether to approve or reject the ad you're working on. 
+Besides, each target advertisement is in a specific policy domain, you will be given a set of policy rules for the current policy domain. Please make your decisions also based on these rules.
+Note that if an ad's approval label is 'approved,' the predicted_rejection_reason, predicted_sub_rejection, and predicted_rejection_comment fields will be (null).
 
 **Instruction:**
 
 1. Data Analysis:
+Read and understand the policy rules for the current policy domain thoroughly and carefully.                                     
 Analyze the provided dataset of example ads to become familiar with, understand, and fully grasp the reasons behind each ad's rejection or approval, identifying any underlying patterns.
 Highlight contextual nuances that may affect approval decisions.
 
 2. Label generation
-Based on your analysis and what you have learned, carefully review the thumbnail image, title, and description of the target advertisement. Decide whether the target ad should be approved or rejected. If you decide to reject it, please provide the reason for rejection.
+Based on your analysis and what you have learned, carefully review the thumbnail image, title, and description of the target advertisement. Decide whether the target ad should be approved or rejected. If you decide to reject it, please provide the reason for rejection. If the target ad violates a policy rule/rules, list the rule id(s) it violates.
 
 **Policy Domain:**
-id: ${policy_domain_id}
-name: ${policy_domain}
+policy_domain_id: ${policy_domain_id}
+policy_name: ${policy_domain}
+policy_rules: ${policy_rules}                       
 
 **Output**:
 Please provide your output in the following format:
 Approval Label: {rejected/approved}
 Predicted Rejection Comment: {(Provide the reason if rejected; enter (null) if approved)}
+Violated rule id(s): {(Provide the violated rule id(s) in a list format ["1.1", "3.2", ...] if rejected; enter (null) if approved)}
 
-**Do not provide any string other than the approval label and predicted rejection comment.**
+**Do not provide any string other than the approval label, predicted rejection comment, and violated rule id(s).**
 """)
 
-def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_data_chunk, evaluation_model, similar_item, output_dir, remove_duplicate_titles, exp_name = None):
+def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_data_chunk, evaluation_model, similar_item, policy_rules, output_dir, remove_duplicate_titles, exp_name = None):
     y_true = []
     y_pred = []
     detailed_results = []  # List to store detailed results for each eval data point
@@ -77,10 +82,6 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
     # Separate approved and rejected data and tokenize content
     approved_data = train_data_chunk[train_data_chunk['approval_label'] == 'approved']
     rejected_data = train_data_chunk[train_data_chunk['approval_label'] == 'rejected']
-
-    approved_data, approved_valid_responses = get_data_chunk_with_valid_thumbnail_url(approved_data, "low")
-    rejected_data, rejected_valid_responses = get_data_chunk_with_valid_thumbnail_url(rejected_data, "low")
-
     approved_data['tokenized_content'] = approved_data.apply(lambda x: (str(x['title']) + ' ' + str(x['description'])).split(), axis=1)
     rejected_data['tokenized_content'] = rejected_data.apply(lambda x: (str(x['title']) + ' ' + str(x['description'])).split(), axis=1)
     
@@ -105,10 +106,10 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
             }])
         }
 
-        # Generate user prompt for target advertisement (using default components)
+        # Generate user prompt for target advertisement
         target_content = convert_dataset_to_user_prompt(
             target_ad_dict,
-            components_override=None,  # Default components: title, description, thumbnail_url
+            components_override=None, 
             is_relevant_component_only=False,
             included_comment_col=None,  
             img_detail_level='low'
@@ -122,7 +123,7 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
             ])
         }
 
-        # Generate user prompt for example advertisements (using custom components)
+        # Generate user prompt for example advertisements 
         examples_content = convert_dataset_to_user_prompt(
             example_ads_dict,
             components_override=[
@@ -130,22 +131,23 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
                 'predicted_rejection_reason', 'predicted_sub_rejection', 'predicted_rejection_comment'
             ],
             is_relevant_component_only=False,
-            included_comment_col=None,  # Include rejection comments
+            included_comment_col=None,  
             img_detail_level='low'
         )
 
         rendered_prompt = in_context_learning_prompt.substitute(
             policy_domain_id=policy_domain_idx,
-            policy_domain=policy_domain
+            policy_domain=policy_domain,
+            policy_rules=policy_rules
         )
 
         messages = [
             {
                 "role": "system",
-                "content": rendered_prompt  
+                "content": rendered_prompt 
             },
-            target_content,
-            examples_content
+            examples_content,
+            target_content
         ]
 
         kwargs = {
@@ -161,17 +163,18 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
         # Sample response from OpenAI API
         response_content = response.choices[0].message.content.strip('`json\n')
 
-        # Extract the Approval Label from the response content
-        # Assuming the response content format: "Approval Label: {label}\nPredicted Rejection Comment: {comment}"
         predicted_approval_label = None
         predicted_rejection_comment = None
+        violated_rule_ids = None
+
         for line in response_content.splitlines():
             if "Approval Label:" in line:
-                predicted_approval_label = line.split("Approval Label:")[1].strip().lower() 
-                predicted_approval_label = predicted_approval_label.replace(" ", "").replace(".", "").replace(",", "")
+                predicted_approval_label = (line.split("Approval Label:")[1].strip().lower()).replace(" ", "").replace(".", "").replace(",", "")
             elif "Predicted Rejection Comment:" in line:
                 predicted_rejection_comment = line.split("Predicted Rejection Comment:")[1].strip()
-
+            elif "Violated rule id(s):" in line:
+                violated_rule_ids = line.split("Violated rule id(s):")[1].strip()
+                
         if predicted_approval_label not in ["rejected", "approved"]:
             print("Error: Approval label is not in the expected format.")
         # Now compare with the actual label
@@ -191,6 +194,7 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
                     "target_real_approval_label": eval_row['approval_label'].lower(),
                     "target_predicted_approval_label": predicted_approval_label,
                     "target_predicted_rejection_comment": predicted_rejection_comment,
+                    "target_violated_rule_ids": violated_rule_ids,
                     "example_id": ad['id'],
                     "example_item_id": ad['item_id'],
                     "example_image_url": ad['thumbnail_url'],
@@ -214,79 +218,78 @@ def rank_bm25_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_
 
 def main(model):
 
+    # no same title
+    no_duplicate_base_dir = "/Users/wangyuchen/Desktop/research_with_Taboola/abby-taboola/meta_prompting/single_iter_meta_prompt/in_context_learning_nosametitles_withrules_url_results"
+    # same title
+    duplicate_base_dir = "/Users/wangyuchen/Desktop/research_with_Taboola/abby-taboola/meta_prompting/single_iter_meta_prompt/in_context_learning_sametitles_withrules_url_results"
+
+    #Get policy rules for each policy_domain
+    policy_rules_dict = get_all_policy_rules()
+
     policy_domains = ['Copyrights and Competitive Claims', 'Endorsement', 'Exploitative', 'Finance Claims', 'Health Claims',
                       'Misrepresentative', 'Offensive', 'Politicized', 'Quality', 'Sexualized or Skin']
     policy_domain_to_idx = {x: i+1 for i, x in enumerate(policy_domains)}
     
-    # read data
-    data = json.load(open(os.path.join(HOME_DIR, 'data/1004_meta_prompting_promotional_content_personal_finance_investing_only_dataset_splitted.json')))
-    data_df = {}
-    for k, v in data.items():
-        data_df[k] = {
-            'train_df': pd.read_json(json.dumps(v['train'])),
-            'eval_df':  pd.read_json(json.dumps(v['eval']))
-        }
+    data_df = pd.read_pickle("/Users/wangyuchen/Desktop/research_with_Taboola/abby-taboola/meta_prompting/data/filtered_1004_meta_data_with_valid_thumbnail_url.pkl")
 
-    similar_items = [5,10,15,20,25,30,40,50,60,70,80,90,100]
-    results_no_duplicates = []
-    results_with_duplicates = []
+    similar_items = [40]
 
-    #1. no sametitles
-    no_duplicates_base_dir = "/Users/wangyuchen/Desktop/research_with_Taboola/abby-taboola/meta_prompting/single_iter_meta_prompt/in_context_learning_nosametitles_norules_url_results"
-
-    print("Start inferencing without duplicate titles:")
+    # 1. no same title, rules, url
+    no_duplicate_results = []
     for similar_item in similar_items:
         # Create directory for each similar_item
-        similar_item_dir = os.path.join(no_duplicates_base_dir, f"similar_item_{similar_item}")
+        similar_item_dir = os.path.join(no_duplicate_base_dir, f"similar_item_{similar_item}")
         os.makedirs(similar_item_dir, exist_ok=True)
-
         for policy_domain in policy_domains:
             policy_domain_idx = policy_domain_to_idx[policy_domain]
-            f1_score = rank_bm25_retrieve(policy_domain_idx, policy_domain, data_df[policy_domain]['eval_df'], data_df[policy_domain]['train_df'], model, similar_item, similar_item_dir, True) 
-            print(f"The macro F1-score for {policy_domain} with similar_item={similar_item} is: {f1_score:.4f}")
+            policy_rules = policy_rules_dict[policy_domain]
+            f1_score = rank_bm25_retrieve(policy_domain_idx, policy_domain, data_df[policy_domain]['eval_df'], data_df[policy_domain]['train_df'], model, similar_item, policy_rules, similar_item_dir, True) 
+            print(f"The macro F1-score for {policy_domain} with similar_item={similar_item} is for nosametitle rules url: {f1_score:.4f}")
 
             # Append results to the list
-            results_no_duplicates.append({
+            no_duplicate_results.append({
                 "policy_domain": policy_domain,
                 "similar_item": similar_item,
-                "macro_f1_score": f1_score
+                "F1": f1_score
             })
 
     # Create a DataFrame and save to CSV
-    results_no_duplicates_df = pd.DataFrame(results_no_duplicates)
+    results_df = pd.DataFrame(no_duplicate_results)
     # Save the DataFrame to CSV
-    results_no_duplicates_df.to_csv("rank_bm25_nosametitles_norules_url.csv", index=False)
+    results_df.to_csv("rank_bm25_withrules_nosametitles_url_macro_f1_scores.csv", index=False)
+
     # Print out the absolute path of the CSV file
-    print(f"Results saved to {os.path.abspath('rank_bm25_nosametitles_norules_url.csv')}")
+    csv_path = os.path.abspath("rank_bm25_withrules_nosametitles_url_macro_f1_scores.csv")
+    print(f"Results saved to {csv_path}")
 
-    #2. with sametitles
-    with_duplicates_base_dir = "/Users/wangyuchen/Desktop/research_with_Taboola/abby-taboola/meta_prompting/single_iter_meta_prompt/in_context_learning_withsametitles_norules_url_results"
-
-    print("Start inferencing with duplicate titles:")
+    # 2. same title, rules, url
+    duplicate_results = []
     for similar_item in similar_items:
         # Create directory for each similar_item
-        similar_item_dir = os.path.join(with_duplicates_base_dir, f"similar_item_{similar_item}")
+        similar_item_dir = os.path.join(duplicate_base_dir, f"similar_item_{similar_item}")
         os.makedirs(similar_item_dir, exist_ok=True)
-
         for policy_domain in policy_domains:
             policy_domain_idx = policy_domain_to_idx[policy_domain]
-            f1_score = rank_bm25_retrieve(policy_domain_idx, policy_domain, data_df[policy_domain]['eval_df'], data_df[policy_domain]['train_df'], model, similar_item, similar_item_dir, False) 
-            print(f"The macro F1-score for {policy_domain} with similar_item={similar_item} is: {f1_score:.4f}")
+            policy_rules = policy_rules_dict[policy_domain]
+            f1_score = rank_bm25_retrieve(policy_domain_idx, policy_domain, data_df[policy_domain]['eval_df'], data_df[policy_domain]['train_df'], model, similar_item, policy_rules, similar_item_dir, False) 
+            print(f"The macro F1-score for {policy_domain} with similar_item={similar_item} is for sametitle rules url: {f1_score:.4f}")
 
             # Append results to the list
-            results_with_duplicates.append({
+            duplicate_results.append({
                 "policy_domain": policy_domain,
                 "similar_item": similar_item,
-                "macro_f1_score": f1_score
+                "F1": f1_score
             })
 
     # Create a DataFrame and save to CSV
-    results_with_duplicates_df = pd.DataFrame(results_with_duplicates)
+    results_df = pd.DataFrame(duplicate_results)
     # Save the DataFrame to CSV
-    results_with_duplicates_df.to_csv("rank_bm25_withsametitles_norules_url.csv", index=False)
-    # Print out the absolute path of the CSV file
-    print(f"Results saved to {os.path.abspath('rank_bm25_withsametitles_norules_url.csv')}")
+    results_df.to_csv("rank_bm25_withrules_sametitles_url_macro_f1_scores.csv", index=False)
 
+    # Print out the absolute path of the CSV file
+    csv_path = os.path.abspath("rank_bm25_withrules_sametitles_url_macro_f1_scores.csv")
+    print(f"Results saved to {csv_path}")
+    
 if __name__ == '__main__':
     evaluation_model = "gpt-4o-2024-08-06"
     main(evaluation_model)

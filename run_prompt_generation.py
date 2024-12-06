@@ -1,3 +1,5 @@
+# single iteration meta-prompting
+
 import os
 import json
 from pathlib import Path
@@ -9,7 +11,6 @@ import sys
 HOME_DIR = os.path.dirname(os.getcwd())
 sys.path.append(HOME_DIR)
 from utils import *
-
     
 initial_rule_generation_prompt = """
 **Context:**
@@ -63,7 +64,6 @@ Use the following structure:
 **Do not provide any string other than those inside the key value pairs.**
 """
 
-
 def main(seed):
     # data chunk size
     default_approved_init_size = 30
@@ -71,7 +71,6 @@ def main(seed):
     final_approved_max_examples = 30  # 6
     final_rejected_max_examples = 70  # 14
     
-    #seed = 2024   # 42 1234 2024
     img_detail_level = 'low'
 
     policy_domains = ['Copyrights and Competitive Claims', 'Endorsement', 'Exploitative', 'Finance Claims', 'Health Claims', 'Misrepresentative', 'Offensive', 'Politicized', 'Quality', 'Sexualized or Skin']
@@ -84,9 +83,6 @@ def main(seed):
             'train_df': pd.read_json(json.dumps(v['train'])),
             'eval_df':  pd.read_json(json.dumps(v['eval']))
         }
-        #print(v.keys())
-        #print(len(data_df[k]['train_df']))
-        #print(len(data_df[k]['eval_df']))
             
     # output directories
     exp = 'single_iter_meta_prompt'
@@ -144,7 +140,6 @@ def main(seed):
             json.dump(json.loads(response.choices[0].message.content.strip('`json\n')), f, indent=4)
             print(f'Initial rule generation response saved to: {response_file_path}')
             
-
 if __name__ == '__main__':
     for seed in range(107, 111):
         main(seed)

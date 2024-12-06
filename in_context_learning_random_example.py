@@ -1,3 +1,5 @@
+# random sampling: text only -> no rules
+
 import os
 import json
 from pathlib import Path
@@ -30,21 +32,11 @@ else:
     client = OpenAI(
         organization=open('organization_uclanlp.txt').readline().strip(),
         api_key=open('api_key_uclanlp.txt').readline().strip(),
-        # base_url=openai_api_base,
     )
     rules_generation_model = 'gpt-4-turbo-2024-04-09'
     image_check_model = "gpt-4o-2024-08-06"
     evaluation_model = "gpt-4o-2024-08-06"
-    # raise NotImplementedError
 
-
-#template for in_context_learning prompt
-#1. context
-#2. task
-#3. instruction
-    #a. data analysis: the related cases from training dataset
-    #b. inference: infer from the related cases
-#4.output: approved/rejected
 in_context_learning_prompt = Template("""
 **Context:**
 You are a very senior Ad Reviewer with twenty years experience. Your task is to thoroughly review all relevant information pertaining to an advertisement and determine whether it meets the criteria for approval or should be rejected.
@@ -85,25 +77,6 @@ Predicted Rejection Comment: {(Provide the reason if rejected; enter (null) if a
 **Do not provide any string other than the approval label and predicted rejection comment.**
 """)
 
-def get_unique_top_random(data, similar_item, remove_duplicate_titles):
-    """
-    随机选择数据，确保符合要求。
-    """
-    if remove_duplicate_titles:
-        # 统计标题出现次数
-        title_counts = data['title'].value_counts()
-        unique_data = data[data['title'].map(title_counts) == 1]  # 保留唯一标题的数据
-        if len(unique_data) >= similar_item:
-            return unique_data.sample(n=similar_item)
-        else:
-            return unique_data
-    else:
-        if len(data) >= similar_item:
-            return data.sample(n=similar_item)
-        else:
-            return data
-
-
 def rank_random_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, train_data_chunk, evaluation_model, similar_item, output_dir, remove_duplicate_titles, exp_name=None):
     y_true = []
     y_pred = []
@@ -124,8 +97,6 @@ def rank_random_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, trai
         # Get unique or random items
         top_approved = get_unique_top_random(approved_data, similar_item, remove_duplicate_titles)
         top_rejected = get_unique_top_random(rejected_data, similar_item, remove_duplicate_titles)
-
-        # Combine approved and rejected items
         selected_train_items = pd.concat([top_approved, top_rejected]).to_dict('records')
 
         # render the prompt
@@ -187,8 +158,7 @@ def rank_random_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, trai
         predicted_rejection_comment = None
         for line in response_content.splitlines():
             if "Approval Label:" in line:
-                predicted_approval_label = line.split("Approval Label:")[1].strip().lower()  # Convert to lowercase and strip any surrounding whitespace
-                # Clean any additional characters or punctuation
+                predicted_approval_label = line.split("Approval Label:")[1].strip().lower()
                 predicted_approval_label = predicted_approval_label.replace(" ", "").replace(".", "").replace(",", "")              
             elif "Predicted Rejection Comment:" in line:
                 predicted_rejection_comment = line.split("Predicted Rejection Comment:")[1].strip()
@@ -229,7 +199,6 @@ def rank_random_retrieve(policy_domain_idx, policy_domain, eval_data_chunk, trai
     print(f"Saved detailed results to {output_file}")
 
     return f1
-
 
 def main_random(model):
     policy_domains = ['Copyrights and Competitive Claims', 'Endorsement', 'Exploitative', 'Finance Claims', 'Health Claims',
@@ -284,7 +253,6 @@ def main_random(model):
     results_with_duplicates_df = pd.DataFrame(results_with_duplicates)
     results_with_duplicates_df.to_csv("random_sametitles_macro_f1_scores.csv", index=False)
     print(f"Results saved to {os.path.abspath('random_sametitles_macro_f1_scores.csv')}")
-
 
 if __name__ == '__main__':
     evaluation_model = "gpt-4o-2024-08-06"
